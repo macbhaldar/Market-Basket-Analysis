@@ -1,5 +1,6 @@
 # Association Rules
 
+# Loading Libraries
 library(tidyr)
 library(dplyr)
 library(stringr)
@@ -16,37 +17,38 @@ library(lubridate)
 library(cowplot)
 
 # Import Data
-
 groceries <- read.table("Groceries.csv", head=FALSE, stringsAsFactors = FALSE, sep = ",", strip.white = TRUE, blank.lines.skip = TRUE,
                         col.names = paste0("V",seq_len(34)), fill = TRUE, na.strings="NA")
 
 
-# EXPLORATORY ANALYSIS RAW FILE
+# EXPLORATORY DATA ANALYSIS
 
 class(groceries) #data.frame
 
 # Explore the first 10 rows of the file
 head(groceries, 10)
 
-# Explore the last 50 rows
-tail(groceries, 50)
-
-# Check if there is any na values
-sapply(groceries, function(x) sum(is.na(x))) # Doesn't seem to be any NA
+# Check if there is any NA values
+sapply(groceries, function(x) sum(is.na(x)))
+# Doesn't seem to be any NA
 
 # Check again with different function the missing values
-groceries[!complete.cases(groceries), ] # no missing values
+groceries[!complete.cases(groceries), ]
+# no missing values
 
 # Check the structure of the data set
 str(groceries)
 
 # Check the number of rows and columns
-dim(groceries) # confirmed 1,499 rows and 34 columns
+dim(groceries) 
+# confirmed 1,499 rows and 34 columns
 
 
-# CLEANING 
+# DATA CLEANING
+
 # A new data frame is created called groceries_clean
 # Split data appearing in first column V1. Create two new variables date and product_1
+
 groceries_clean <- groceries %>%
   separate(col = V1,
            into = c("date","product_1"),
@@ -79,22 +81,24 @@ subset(groceries_items_single, transactionID == 1)
 # Remove variable
 groceries_items_single <- select(groceries_items_single,-c("variable"))
 
-# Check how many diferent items there are
+# Check how many different items there are
 count(unique(groceries_items_single$value)) #One of the elements is empty
 
 # Cleaning empty values 
 groceries_items_single <- groceries_items_single[-which(groceries_items_single$value == ""), ]
-# Check if there is any na values
+
+# Check if there is any NA values
 sapply(groceries_items_single, function(x) sum(is.na(x))) #not NA found
 
-# check again for na values in different way
+# check again for NA values in different way
 sum(is.na(groceries_items_single))
 
 # Check again with different function the missing values
-groceries_items_single[!complete.cases(groceries_items_single), ] #all looks good
+groceries_items_single[!complete.cases(groceries_items_single), ]
 
-# Check how many diferent items there are
-count(unique(groceries_items_single$value)) #Now there are no empty elemnets and is ready to export
+# Check how many different items there are
+count(unique(groceries_items_single$value)) 
+# Now there are no empty elemnets and is ready to export
 
 # Check Structure
 str(groceries_items_single)
@@ -132,7 +136,8 @@ length(groceries_transactions)
 # Return the number of rows and items (columns)
 items(groceries_transactions)
 
-# checking the frequency of the items in absolute terms
+
+# Frequency of the items in absolute terms
 freq_abs <- itemFrequency(groceries_transactions, type = "absolute")
 
 # Ordering
@@ -145,20 +150,24 @@ freq_abs
 itemFrequencyPlot(groceries_transactions,type="absolute",
                   main="Absolute Item Frequency", ylab = "Absolute Item Frequency", topN = 38)
 
-# checking the frequency of the items in relative terms
+
+
+# Frequency of the items in relative terms
 freq_rel <- itemFrequency(groceries_transactions, type = "relative")
 
 # Ordering
 freq_rel <- freq_rel %>% sort(decreasing = TRUE)
 
 # Visualizing them
-freq_rel #vegetables appear in 72.64% of the itemsets
+freq_rel # vegetables appear in 72.64% of the item sets
 
 # Creating Plot
 itemFrequencyPlot(groceries_transactions,type="relative",
                   main="Relative Item Frequency", ylab = "Relative Item Frequency", topN = 38)
 
-# number of items in each of the transactions
+
+
+# Number of items in each of the transactions
 size_transactions <- data.frame(size = size(groceries_transactions))
 
 # show the first transactions
@@ -184,47 +193,54 @@ hist_transactions <- ggplot(size_transactions, aes(x = size)) +
 plot_grid(density_transactions, hist_transactions, labels = "AUTO")
 
 # Visualizing 80 transactions
-image(sample(groceries_transactions,80)) #doesn't seem to be any item repeated in all of them
+image(sample(groceries_transactions,80)) 
+# doesn't seem to be any item repeated in all of them
 
 
-# APRIORI ALGORITHM - CHECKING THE ITEMSETS
-# Using apriory algorithm to check the item sets that has a support of 0.01, a confidence of 0.8 and which contain at least 2 items
-groceries_apriori_items <- apriori(groceries_transactions,parameter=list(support=0.01,confidence=0.8,minlen=2, target = "frequent itemsets"))
 
-# Ordering the items ets by support
+
+# APRIORI ALGORITHM - CHECKING the item sets
+
+# Using apriori algorithm to check the item sets that has a support of 0.01, a confidence of 0.8 and which contain at least 2 items
+groceries_apriori_items <- apriori(groceries_transactions,parameter=list(support=0.01,confidence=0.8,minlen=2, target = "frequent item sets"))
+
+# Ordering the items by support
 groceries_apriori_items <- sort(groceries_apriori_items,by="support", decreasinfg = TRUE)
 
-# Checking the summary of the itemsets generated with those interest measure
+# Checking the summary of the item sets generated with those interest measure
 summary(groceries_apriori_items)
 
-# Inspecting only the head of the itemsets
-inspect(head(groceries_apriori_items, 10)) # The max support seems to be 0.32, for itemset with two items
+# Inspecting only the head of the item sets
+inspect(head(groceries_apriori_items, 10)) 
+# The max support seems to be 0.32, for itemset with two items
 # As expected all the combinations contain vegetables as appears in 72.64% of the transactions
 
 # Checking again but without vegetables
 groceries_apriori_items_non_veg <- apriori(groceries_transactions,
-                                           parameter=list(support=0.01,confidence=0.8,minlen=2, target = "frequent itemsets"),
+                                           parameter=list(support=0.01,confidence=0.8,minlen=2, target = "frequent item sets"),
                                            appearance = list(none = "vegetables"))
 
 # Ordering the item sets by support
 groceries_apriori_items_non_veg <- sort(groceries_apriori_items_non_veg,by="support", decreasing = TRUE)
 
-# Inspecting only the head of the itemsets
-inspect(head(groceries_apriori_items_non_veg, 10)) #now the max support is 0.18. In general the support seems very low
+# Inspecting only the head of the item sets
+inspect(head(groceries_apriori_items_non_veg, 10)) 
+# now the max support is 0.18. In general the support seems very low
 
 # Checking again but wihout vegetables and increasing the min of items in the item set to 3
 groceries_apriori_items_non_veg_3 <- apriori(groceries_transactions,
-                                             parameter=list(support=0.01,confidence=0.8,minlen=2, target = "frequent itemsets"),
+                                             parameter=list(support=0.01,confidence=0.8,minlen=2, target = "frequent item sets"),
                                              appearance = list(none = "vegetables"))
 
-# Ordering the itemsets by support
+# Ordering the item sets by support
 groceries_apriori_items_non_veg_3 <- sort(groceries_apriori_items_non_veg_3,by="support", decreasing = TRUE)
 
-# Checking the summary of the itemsets generated with those interest measure
-summary(groceries_apriori_items_non_veg_3) #there are 619,044 itemsets that acomplish those requirements, most of them contain 5 items
+# Checking the summary of the item sets generated with those interest measure
+summary(groceries_apriori_items_non_veg_3) #there are 619,044 item sets that acomplish those requirements, most of them contain 5 items
 
-# Inspecting only the head of the itemsets
-inspect(head(groceries_apriori_items_non_veg_3, 10)) #now the max support is 0.09, very very low
+# Inspecting only the head of the item sets
+inspect(head(groceries_apriori_items_non_veg_3, 10)) 
+# now the max support is 0.09, very very low
 # This is the combination that will be explored when creating the rules
 
 
