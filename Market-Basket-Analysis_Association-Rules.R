@@ -3,21 +3,21 @@
 # Loading Libraries
 library(tidyr)
 library(dplyr)
+library(ggplot2)
 library(stringr)
+library(lubridate)
 library(anytime)
 library(plyr)
 library(arules)
 library(BayesLCA)
 library(arulesViz)
 library(reshape2)
-library(RColorBrewer)
 library(sjmisc)
-library(ggplot2)
-library(lubridate)
 library(cowplot)
+library(RColorBrewer)
 
 # Import Data
-groceries <- read.table("Groceries.csv", head=FALSE, stringsAsFactors = FALSE, sep = ",", strip.white = TRUE, blank.lines.skip = TRUE,
+groceries <- read.table("data/Groceries.csv", head=FALSE, stringsAsFactors = FALSE, sep = ",", strip.white = TRUE, blank.lines.skip = TRUE,
                         col.names = paste0("V",seq_len(34)), fill = TRUE, na.strings="NA")
 
 
@@ -103,12 +103,12 @@ count(unique(groceries_items_single$value))
 # Check Structure
 str(groceries_items_single)
 # Export cleaned data frame
-write.csv(groceries_items_single, "groceries_items_single.csv", row.names = FALSE)
+write.csv(groceries_items_single, "data/groceries_items_single.csv", row.names = FALSE)
 
 
 # IMPORT CSV AS TRANSACTION IN SINGLE FORMAT
 # As some items can be bought twice and can then appear twice in the transaction rm.duplicates equals true is used to remove them
-groceries_transactions <- read.transactions(file = "groceries_items_single.csv",
+groceries_transactions <- read.transactions(file = "data/groceries_items_single.csv",
                                             format = "single",
                                             sep = ",",
                                             header = TRUE,
@@ -174,7 +174,8 @@ size_transactions <- data.frame(size = size(groceries_transactions))
 head(size_transactions)
 
 # Summary of size of transactions
-summary(size_transactions) #the mean and the median are very similar which indicate that are normally distributed
+summary(size_transactions)
+# the mean and the median are very similar which indicate that are normally distributed
 # the min number of items within a transaction are 4 and the max 27, as seen already in the summary
 
 # distribution of the size of the transactions
@@ -192,8 +193,8 @@ hist_transactions <- ggplot(size_transactions, aes(x = size)) +
 # Adding both plots together
 plot_grid(density_transactions, hist_transactions, labels = "AUTO")
 
-# Visualizing 80 transactions
-image(sample(groceries_transactions,80)) 
+# Visualizing 100 transactions
+image(sample(groceries_transactions,100)) 
 # doesn't seem to be any item repeated in all of them
 
 
@@ -210,8 +211,9 @@ groceries_apriori_items <- sort(groceries_apriori_items,by="support", decreasinf
 # Checking the summary of the item sets generated with those interest measure
 summary(groceries_apriori_items)
 
+
 # Inspecting only the head of the item sets
-inspect(head(groceries_apriori_items, 10)) 
+inspect(head(groceries_apriori_items, 10))
 # The max support seems to be 0.32, for itemset with two items
 # As expected all the combinations contain vegetables as appears in 72.64% of the transactions
 
@@ -236,7 +238,7 @@ groceries_apriori_items_non_veg_3 <- apriori(groceries_transactions,
 groceries_apriori_items_non_veg_3 <- sort(groceries_apriori_items_non_veg_3,by="support", decreasing = TRUE)
 
 # Checking the summary of the item sets generated with those interest measure
-summary(groceries_apriori_items_non_veg_3) #there are 619,044 item sets that acomplish those requirements, most of them contain 5 items
+summary(groceries_apriori_items_non_veg_3) # there are 619,044 item sets that acomplish those requirements, most of them contain 5 items
 
 # Inspecting only the head of the item sets
 inspect(head(groceries_apriori_items_non_veg_3, 10)) 
@@ -252,7 +254,8 @@ groceries_apriori_rules <- apriori(groceries_transactions,
 # there are 9,660 rules with those interest measures
 
 # Checking the summary
-summary(groceries_apriori_rules) #most of the rules contain 6 items
+summary(groceries_apriori_rules) # most of the rules contain 6 items
+
 
 
 # Checking again but increasing support to 0.02
@@ -262,7 +265,7 @@ groceries_apriori_rules_1 <- apriori(groceries_transactions,
 # there are 9,660 rules with those interest measures
 
 # Checking the summary
-summary(groceries_apriori_rules_1) #now there are only 14 rules left
+summary(groceries_apriori_rules_1)  # now there are only 14 rules left
 
 # Checking the rules
 inspect(groceries_apriori_rules_1)
@@ -270,10 +273,10 @@ inspect(groceries_apriori_rules_1)
 # Checking the length
 length(groceries_apriori_rules_1)
 
-# Checking Conviction as per https://stackoverflow.com/questions/40095618/calculating-conviction-values-for-association-rules-in-r
+# Checking Conviction
 cbind(as(groceries_apriori_rules_1, "data.frame"), conviction=interestMeasure(groceries_apriori_rules_1, "conviction", groceries_transactions))
 
-# Check other diferent metrics as per https://rdrr.io/cran/arules/man/interestMeasure.html
+# Check other diferent metrics
 interestMeasure(groceries_apriori_rules_1, c("leverage", "collectiveStrength"), 
                 transactions = groceries_transactions)
 
@@ -311,9 +314,9 @@ rules_lift_2_2 <- subset(groceries_apriori_rules_1, subset = lift > 2.2)
 inspect(rules_lift_2_2)
 
 # savig association rules with higher lift
-write(rules_lift_2_2, file = "rules_lift_2_2.csv", sep = ",", quote = TRUE, row.names = FALSE)
+write(rules_lift_2_2, file = "data/rules_lift_2_2.csv", sep = ",", quote = TRUE, row.names = FALSE)
 
-# graph fpr one rule, double decker plots https://cran.r-project.org/web/packages/arulesViz/vignettes/arulesViz.pdf
+# graph fpr one rule, double decker plots
 # areas is the support ,and high is the confidence
 # selecting rule 12
 rule_1 <- rules_lift_2_2[1,]
@@ -396,7 +399,7 @@ str(groceries_items_basket)
 colnames(groceries_items_basket)
 
 # Export clean and with just items data frame into a csv file
-write.csv(groceries_items_basket,"groceries_items_basket.csv", row.names = FALSE)
+write.csv(groceries_items_basket,"data/groceries_items_basket.csv", row.names = FALSE)
 
 
 # IMPORT CSV AS TRANSACTION IN BASKET FORMAT
@@ -404,7 +407,7 @@ write.csv(groceries_items_basket,"groceries_items_basket.csv", row.names = FALSE
 # Import csv file again as transactions
 # As some items can be bought twice and can then appear twice in the transaction rm.duplicates equals true is used to remove them
 # The format has been set to basket as there is one transaction per row with all the transactions
-groceries_transactions_basket <- read.transactions(file = "groceries_items_basket.csv",
+groceries_transactions_basket <- read.transactions(file = "data/groceries_items_basket.csv",
                                                    format = "basket",
                                                    sep = ",",
                                                    header = TRUE,
